@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    text_weather::run()
 }
