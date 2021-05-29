@@ -1,5 +1,11 @@
-const URL: &str = "https://weather-broker-cdn.api.bbci.co.uk/en/observation/rss/2638077";
+use std::env;
 
 fn main() {
-    text_weather::run(URL);
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: text_weather <url>");
+        eprintln!("Only bbc rss feeds are currently supported");
+        std::process::exit(1)
+    }
+    text_weather::run(&args[1]);
 }
