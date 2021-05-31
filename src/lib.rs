@@ -1,6 +1,5 @@
-mod convert;
 mod net;
-mod rss;
+mod rss2;
 use net::reqwest_fetch_url;
 mod parser;
 use parser::parse_document;
@@ -20,12 +19,20 @@ pub fn run(uri: &str) {
 
     let forecast = match parse_document(rss_body.as_str()) {
         Ok(forecast) => forecast,
-        Err(_) => panic!("Something went wrong in parsing..."),
+        Err(e) => panic!("Something went wrong in parsing...{:?}", e),
     };
 
     println!("{} {}", forecast.title(), forecast.description());
+    println!("{}", forecast.link());
+    println!("{}", forecast.language());
+    println!("{}", forecast.copyright());
+    println!("{}", forecast.pub_date());
+
     for item in forecast.items() {
         println!("{} {}", item.title(), item.description());
         println!("{}", item.pub_date());
+        println!("{}", item.link());
+        println!("{}", item.guid());
+        println!("{}", item.geo_rss_point());
     }
 }

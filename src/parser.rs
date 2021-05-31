@@ -1,5 +1,7 @@
-use crate::convert::{to_date_time, to_geo_rss_point, to_url, valid_str};
-use crate::rss::{BBCWeatherLatest, ItemBuilder, RssBuilder};
+use crate::rss2::{
+    BBCWeatherThreeDay, Builder, ChannelBuilder, DateTimeElement, ElementParser,
+    GeoRSSPointElement, ItemBuilder, StringElement, UrlElement,
+};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
@@ -38,17 +40,29 @@ enum ItemParseState {
     GeoRssPoint,
 }
 
+#[derive(Debug)]
 pub enum Error {
-    Parse,
+    TextBuffer,
+    ParseTitle,
+    ParseLink,
+    ParseDescription,
+    ParseLanguage,
+    ParseCopyright,
+    ParsePubDate,
+    ParseItem,
+    ParseGuid,
+    ParseGeoRssPoint,
+    LibraryError,
+    BuilderError,
 }
 
-pub fn parse_document(body: &str) -> Result<BBCWeatherLatest, Error> {
+pub fn parse_document(body: &str) -> Result<BBCWeatherThreeDay, Error> {
     let mut reader = Reader::from_str(body);
     let mut buffer = Vec::new();
     let mut text_buffer = String::new();
     let mut parse_state = ParseState::Initial;
     let mut item_parse_state = ItemParseState::Initial;
-    let mut builder = RssBuilder::new();
+    let mut builder = ChannelBuilder::new();
     let mut item_builder = ItemBuilder::new();
 
     while parse_state != ParseState::Complete {
@@ -84,119 +98,123 @@ pub fn parse_document(body: &str) -> Result<BBCWeatherLatest, Error> {
             Ok(Event::Text(e)) => {
                 text_buffer = match e.unescape_and_decode(&reader) {
                     Ok(text_buffer) => text_buffer,
-                    Err(_) => return Err(Error::Parse),
+                    Err(_) => return Err(Error::TextBuffer),
                 };
             }
             Ok(Event::End(ref e)) => match e.name() {
                 RSS_EL => parse_state = ParseState::Complete,
                 TITLE_EL => {
-                    if !valid_str(&text_buffer) {
-                        return Err(Error::Parse);
-                    }
+                    let title_el = match StringElement::new(&text_buffer) {
+                        Ok(title_el) => title_el,
+                        Err(_) => return Err(Error::ParseTitle),
+                    };
                     match parse_state {
-                        ParseState::Item => item_builder.set_title(&text_buffer),
-                        _ => builder.set_title(&text_buffer),
+                        ParseState::Item => item_builder.set_title(title_el),
+                        _ => builder.set_title(title_el),
                     }
                 }
                 LINK_EL => {
-                    let link = match to_url(&text_buffer) {
-                        Ok(link) => link,
-                        Err(_) => return Err(Error::Parse),
+                    let link_el = match UrlElement::new(&text_buffer) {
+                        Ok(link_el) => link_el,
+                        Err(_) => return Err(Error::ParseLink),
                     };
                     match parse_state {
-                        ParseState::Item => item_builder.set_link(link),
-                        _ => builder.set_link(link),
+                        ParseState::Item => item_builder.set_link(link_el),
+                        _ => builder.set_link(link_el),
                     }
                 }
                 DESCRIPTION_EL => {
-                    if !valid_str(&text_buffer) {
-                        return Err(Error::Parse);
-                    }
+                    let de = match StringElement::new(&text_buffer) {
+                        Ok(de) => de,
+                        Err(_) => return Err(Error::ParseDescription),
+                    };
                     match parse_state {
-                        ParseState::Item => item_builder.set_description(&text_buffer),
-                        _ => builder.set_description(&text_buffer),
+                        ParseState::Item => item_builder.set_description(de),
+                        _ => builder.set_description(de),
                     }
                 }
                 LANGUAGE_EL => {
-                    if !valid_str(&text_buffer) {
-                        return Err(Error::Parse);
-                    }
+                    let le = match StringElement::new(&text_buffer) {
+                        Ok(le) => le,
+                        Err(_) => return Err(Error::ParseLanguage),
+                    };
                     match parse_state {
-                        ParseState::Language => builder.set_language(&text_buffer),
-                        _ => return Err(Error::Parse),
+                        ParseState::Language => builder.set_language(le),
+                        _ => return Err(Error::ParseLanguage),
                     }
                 }
                 COPYRIGHT_EL => {
-                    if !valid_str(&text_buffer) {
-                        return Err(Error::Parse);
-                    }
+                    let ce = match StringElement::new(&text_buffer) {
+                        Ok(ce) => ce,
+                        Err(_) => return Err(Error::ParseCopyright),
+                    };
                     match parse_state {
-                        ParseState::Copyright => builder.set_copyright(&text_buffer),
-                        _ => return Err(Error::Parse),
+                        ParseState::Copyright => builder.set_copyright(ce),
+                        _ => return Err(Error::ParseCopyright),
                     }
                 }
                 PUBDATE_EL => {
-                    let pub_date = match to_date_time(&text_buffer) {
-                        Ok(pub_date) => pub_date,
-                        Err(_) => return Err(Error::Parse),
+                    let pe = match DateTimeElement::new(&text_buffer) {
+                        Ok(pe) => pe,
+                        Err(_) => return Err(Error::ParsePubDate),
                     };
                     match parse_state {
-                        ParseState::Item => item_builder.set_pub_date(pub_date),
-                        _ => builder.set_pub_date(pub_date),
+                        ParseState::Item => item_builder.set_pub_date(pe),
+                        _ => builder.set_pub_date(pe),
                     }
                 }
                 ITEM_EL => match parse_state {
                     ParseState::Item => {
                         let item = match item_builder.get() {
                             Ok(item) => item,
-                            Err(_) => return Err(Error::Parse),
+                            Err(_) => return Err(Error::ParseItem),
                         };
                         builder.set_item(item);
                     }
-                    _ => return Err(Error::Parse),
+                    _ => return Err(Error::ParseItem),
                 },
                 GUID_EL => match parse_state {
                     ParseState::Item => {
-                        let guid = match to_url(&text_buffer) {
-                            Ok(guid) => guid,
-                            Err(_) => return Err(Error::Parse),
+                        let ge = match UrlElement::new(&text_buffer) {
+                            Ok(ge) => ge,
+                            Err(_) => return Err(Error::ParseGuid),
                         };
                         match item_parse_state {
-                            ItemParseState::Guid => item_builder.set_guid(guid),
-                            _ => return Err(Error::Parse),
+                            ItemParseState::Guid => item_builder.set_guid(ge),
+                            _ => return Err(Error::ParseGuid),
                         }
                     }
                     _ => {
-                        return Err(Error::Parse);
+                        return Err(Error::ParseGuid);
                     }
                 },
                 GEORSS_POINT_EL => match parse_state {
                     ParseState::Item => {
-                        let geo_rss = match to_geo_rss_point(&text_buffer) {
-                            Ok(geo_rss) => geo_rss,
-                            Err(_) => return Err(Error::Parse),
+                        let ge = match GeoRSSPointElement::new(&text_buffer) {
+                            Ok(ge) => ge,
+                            Err(_) => return Err(Error::ParseGeoRssPoint),
                         };
                         match item_parse_state {
                             ItemParseState::GeoRssPoint => {
-                                item_builder.set_geo_rss_point(geo_rss);
+                                item_builder.set_geo_rss_point(ge);
                             }
-                            _ => return Err(Error::Parse),
+                            _ => return Err(Error::ParseGeoRssPoint),
                         }
                     }
-                    _ => return Err(Error::Parse),
+                    _ => return Err(Error::ParseGeoRssPoint),
                 },
                 _ => (),
             },
             Ok(Event::Eof) => (),
             Err(e) => {
                 eprintln!("Error at position {}: {:?}", reader.buffer_position(), e);
-                return Err(Error::Parse);
+                return Err(Error::LibraryError);
             }
             _ => (),
         }
     }
     match builder.get() {
         Ok(forecast) => Ok(forecast),
-        Err(_) => Err(Error::Parse),
+        Err(_) => Err(Error::BuilderError),
     }
 }
