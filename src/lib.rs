@@ -1,3 +1,5 @@
+mod display;
+use display::DescriptionModel;
 mod net;
 mod rss2;
 use net::reqwest_fetch_url;
@@ -29,7 +31,9 @@ pub fn run(uri: &str) {
     println!("{}", forecast.pub_date());
 
     for item in forecast.items() {
-        println!("{} {}", item.title(), item.description());
+        let model = DescriptionModel::new(&item.description().to_string()).unwrap();
+        println!("{}", item.title());
+        println!("{:?}", model);
         println!("{}", item.pub_date());
         println!("{}", item.link());
         println!("{}", item.guid());
