@@ -1,7 +1,7 @@
-mod display;
-use display::DescriptionModel;
+mod error;
+mod model;
+use model::Forecast;
 mod net;
-mod rss2;
 use net::reqwest_fetch_url;
 mod parser;
 use parser::parse_document;
@@ -19,24 +19,19 @@ pub fn run(uri: &str) {
         Err(_) => panic!("Network error"),
     };
 
-    let forecast = match parse_document(rss_body.as_str()) {
+    let parsed = match parse_document(rss_body.as_str()) {
         Ok(forecast) => forecast,
-        Err(e) => panic!("Something went wrong in parsing...{:?}", e),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            panic!();
+        }
     };
-
-    println!("{} {}", forecast.title(), forecast.description());
-    println!("{}", forecast.link());
-    println!("{}", forecast.language());
-    println!("{}", forecast.copyright());
-    println!("{}", forecast.pub_date());
-
-    for item in forecast.items() {
-        let model = DescriptionModel::new(&item.description().to_string()).unwrap();
-        println!("{}", item.title());
-        println!("{:?}", model);
-        println!("{}", item.pub_date());
-        println!("{}", item.link());
-        println!("{}", item.guid());
-        println!("{}", item.geo_rss_point());
+    for item in parsed.get_items() {
+        let forecast = Forecast::parse_from_item_title_and_description(
+            item.get_title(),
+            item.get_description(),
+        )
+        .unwrap();
+        println!("{}\n{}", forecast.summary(), forecast.details());
     }
 }
