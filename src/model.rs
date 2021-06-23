@@ -1,22 +1,64 @@
 use crate::error::Error;
+use crate::parser::Item;
 
 use std::fmt;
 
 pub struct Forecast {
-    summary: Summary,
-    details: Details,
+    days: Vec<Daily>,
 }
 
 impl Default for Forecast {
     fn default() -> Self {
-        Forecast {
+        Forecast { days: Vec::new() }
+    }
+}
+
+impl Forecast {
+    pub fn parse_from_items(items: &Vec<Item>) -> Result<Forecast, Error> {
+        let mut days: Vec<Daily> = Vec::new();
+        for item in items {
+            days.push(Daily::parse_from_item_title_and_description(
+                item.get_title(),
+                item.get_description(),
+            )?);
+        }
+        Ok(Forecast { days })
+    }
+    pub fn one(&self) -> Result<&Daily, Error> {
+        if self.days.is_empty() {
+            return Err(Error::Conversion);
+        }
+        Ok(&self.days[0])
+    }
+    pub fn two(&self) -> Result<&Daily, Error> {
+        if self.days.is_empty() || self.days.len() != 3 {
+            return Err(Error::Conversion);
+        }
+        Ok(&self.days[1])
+    }
+    pub fn three(&self) -> Result<&Daily, Error> {
+        if self.days.is_empty() || self.days.len() != 3 {
+            return Err(Error::Conversion);
+        }
+        Ok(&self.days[2])
+    }
+}
+
+pub struct Daily {
+    summary: Summary,
+    details: Details,
+}
+
+impl Default for Daily {
+    fn default() -> Self {
+        Daily {
             summary: Summary::default(),
             details: Details::default(),
         }
     }
 }
 
-impl fmt::Display for Forecast {
+impl fmt::Display for Daily {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -26,12 +68,12 @@ impl fmt::Display for Forecast {
     }
 }
 
-impl Forecast {
+impl Daily {
     pub fn parse_from_item_title_and_description(
         title: &str,
         description: &str,
-    ) -> Result<Forecast, Error> {
-        Ok(Forecast {
+    ) -> Result<Daily, Error> {
+        Ok(Daily {
             summary: Summary::parse_from_str(title)?,
             details: Details::parse_from_str(description)?,
         })
@@ -81,6 +123,9 @@ impl Summary {
         Ok(Summary {
             summary: String::from(&summary[2..]),
         })
+    }
+    pub fn summary(&self) -> &str {
+        &self.summary
     }
 }
 
@@ -171,5 +216,38 @@ impl Details {
             *field = String::from(&rest[2..]);
         }
         Ok(details)
+    }
+    pub fn temperature_max(&self) -> &str {
+        &self.temperature_max
+    }
+    pub fn temperature_min(&self) -> &str {
+        &self.temperature_min
+    }
+    pub fn wind_direction(&self) -> &str {
+        &self.wind_direction
+    }
+    pub fn wind_speed(&self) -> &str {
+        &self.wind_speed
+    }
+    pub fn visibility(&self) -> &str {
+        &self.visibility
+    }
+    pub fn pressure(&self) -> &str {
+        &self.pressure
+    }
+    pub fn humidity(&self) -> &str {
+        &self.humidity
+    }
+    pub fn uv_risk(&self) -> &str {
+        &self.uv_risk
+    }
+    pub fn pollution(&self) -> &str {
+        &self.pollution_level
+    }
+    pub fn sunrise(&self) -> &str {
+        &self.sunrise_time
+    }
+    pub fn sunset(&self) -> &str {
+        &self.sunset_time
     }
 }
