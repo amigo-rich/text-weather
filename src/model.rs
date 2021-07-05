@@ -44,6 +44,36 @@ impl Forecast {
     }
 }
 
+// move iterator
+impl IntoIterator for Forecast {
+    type Item = Daily;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.days.into_iter()
+    }
+}
+
+// ref iterator
+impl<'a> IntoIterator for &'a Forecast {
+    type Item = &'a Daily;
+    type IntoIter = std::slice::Iter<'a, Daily>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.days.iter()
+    }
+}
+
+// mut ref iterator
+impl<'a> IntoIterator for &'a mut Forecast {
+    type Item = &'a mut Daily;
+    type IntoIter = std::slice::IterMut<'a, Daily>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.days.iter_mut()
+    }
+}
+
 pub struct Daily {
     summary: Summary,
     details: Details,
@@ -216,38 +246,5 @@ impl Details {
             *field = String::from(&rest[2..]);
         }
         Ok(details)
-    }
-    pub fn temperature_max(&self) -> &str {
-        &self.temperature_max
-    }
-    pub fn temperature_min(&self) -> &str {
-        &self.temperature_min
-    }
-    pub fn wind_direction(&self) -> &str {
-        &self.wind_direction
-    }
-    pub fn wind_speed(&self) -> &str {
-        &self.wind_speed
-    }
-    pub fn visibility(&self) -> &str {
-        &self.visibility
-    }
-    pub fn pressure(&self) -> &str {
-        &self.pressure
-    }
-    pub fn humidity(&self) -> &str {
-        &self.humidity
-    }
-    pub fn uv_risk(&self) -> &str {
-        &self.uv_risk
-    }
-    pub fn pollution(&self) -> &str {
-        &self.pollution_level
-    }
-    pub fn sunrise(&self) -> &str {
-        &self.sunrise_time
-    }
-    pub fn sunset(&self) -> &str {
-        &self.sunset_time
     }
 }
