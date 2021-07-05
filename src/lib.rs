@@ -6,18 +6,8 @@ use net::reqwest_fetch_url;
 mod parser;
 use parser::parse_document;
 
-use std::io::{stdin, stdout};
-use std::thread;
-use std::time::Duration;
-
-use termion::event::{Event, Key};
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-
-use url::Url;
-
 pub fn run(uri: &str) {
-    let url = match Url::parse(uri) {
+    let url = match url::Url::parse(uri) {
         Ok(url) => url,
         Err(_) => panic!("Invalid url: {}", uri),
     };
@@ -35,37 +25,8 @@ pub fn run(uri: &str) {
         }
     };
     let forecast = Forecast::parse_from_items(parsed.get_items()).unwrap();
-    gui(&forecast);
-}
-
-pub fn gui(_f: &Forecast) {
-    let _ = stdout().into_raw_mode().unwrap();
-    let mut index = 0;
-    loop {
-        let stdin = stdin();
-        /* key input */
-        let ev = stdin.events().next().unwrap();
-        match ev.unwrap() {
-            Event::Key(k) => match k {
-                Key::Char('q') => return,
-                Key::Left => {
-                    if index == 0 {
-                        index = 2;
-                    } else {
-                        index = index - 1;
-                    }
-                }
-                Key::Right => {
-                    if index == 2 {
-                        index = 0;
-                    } else {
-                        index = index + 1;
-                    }
-                }
-                _ => (),
-            },
-            _ => break,
-        }
-        thread::sleep(Duration::from_millis(50));
+    for day in forecast {
+        println!("{}", day.summary());
+        println!("{}", day.details());
     }
 }
