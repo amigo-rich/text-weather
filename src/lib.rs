@@ -24,7 +24,11 @@ pub fn run(uri: &str) -> Result<(), Error> {
     let parsed = parse_document(rss_body.as_str())?;
 
     let forecast = Forecast::parse_from_items(parsed.get_items())?;
-    for day in forecast {
+    for (day, name) in forecast
+        .into_iter()
+        .zip(["Today", "Tomorrow", "Overmorrow"].iter())
+    {
+        println!("{}", name);
         println!("{}", day.summary());
         println!("{}", day.details());
     }
