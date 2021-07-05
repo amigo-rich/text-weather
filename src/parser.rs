@@ -17,7 +17,7 @@ const IMAGE_EL: &[u8] = b"image";
 const GUID_EL: &[u8] = b"guid";
 const URL_EL: &[u8] = b"url";
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Channel {
     title: String,
     link: Url,
@@ -35,14 +35,14 @@ impl Channel {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Image {
     title: String,
     url: Url,
     link: Url,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Item {
     title: String,
     link: Url,
