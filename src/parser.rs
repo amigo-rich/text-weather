@@ -337,6 +337,7 @@ impl TryFrom<Url> for &str {
         Ok(url)
     }
 }
+
 #[derive(PartialEq)]
 enum State {
     Initial,
