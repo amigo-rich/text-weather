@@ -11,5 +11,12 @@ fn main() {
         .get_matches();
 
     let segment = matches.value_of("segment").unwrap();
-    text_weather::run(segment);
+
+    match text_weather::run(segment) {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("{}", e);
+            panic!();
+        }
+    }
 }

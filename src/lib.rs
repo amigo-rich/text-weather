@@ -16,24 +16,18 @@ fn build_url(segment: &str) -> Result<url::Url, Error> {
     Ok(url::Url::parse(&format!("{}/{}", URL_PART, segment))?)
 }
 
-pub fn run(uri: &str) {
-    let url = build_url(uri).unwrap();
+pub fn run(uri: &str) -> Result<(), Error> {
+    let url = build_url(uri)?;
 
-    let rss_body = match reqwest_fetch_url(url) {
-        Ok(rss_body) => rss_body,
-        Err(_) => panic!("Network error"),
-    };
+    let rss_body = reqwest_fetch_url(url)?;
 
-    let parsed = match parse_document(rss_body.as_str()) {
-        Ok(parsed) => parsed,
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            panic!();
-        }
-    };
-    let forecast = Forecast::parse_from_items(parsed.get_items()).unwrap();
+    let parsed = parse_document(rss_body.as_str())?;
+
+    let forecast = Forecast::parse_from_items(parsed.get_items())?;
     for day in forecast {
         println!("{}", day.summary());
         println!("{}", day.details());
     }
+
+    Ok(())
 }
