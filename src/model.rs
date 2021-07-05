@@ -14,7 +14,7 @@ impl Default for Forecast {
 }
 
 impl Forecast {
-    pub fn parse_from_items(items: &Vec<Item>) -> Result<Forecast, Error> {
+    pub fn parse_from_items(items: &[Item]) -> Result<Forecast, Error> {
         let mut days: Vec<Daily> = Vec::new();
         for item in items {
             days.push(Daily::parse_from_item_title_and_description(
