@@ -1,4 +1,5 @@
 mod error;
+use error::Error;
 mod model;
 use model::Forecast;
 mod net;
@@ -6,11 +7,17 @@ use net::reqwest_fetch_url;
 mod parser;
 use parser::parse_document;
 
+const URL_PART: &str = "https://weather-broker-cdn.api.bbci.co.uk/en/forecast/rss/3day";
+
+fn build_url(segment: &str) -> Result<url::Url, Error> {
+    if segment.is_empty() || segment.len() > 128 {
+        return Err(Error::InvalidSegment);
+    }
+    Ok(url::Url::parse(&format!("{}/{}", URL_PART, segment))?)
+}
+
 pub fn run(uri: &str) {
-    let url = match url::Url::parse(uri) {
-        Ok(url) => url,
-        Err(_) => panic!("Invalid url: {}", uri),
-    };
+    let url = build_url(uri).unwrap();
 
     let rss_body = match reqwest_fetch_url(url) {
         Ok(rss_body) => rss_body,

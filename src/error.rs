@@ -5,6 +5,7 @@ pub enum Error {
     Reqwest,
     Conversion,
     InvalidDestination,
+    InvalidSegment,
     ParseLibrary,
 }
 
@@ -16,6 +17,7 @@ impl fmt::Display for Error {
             Error::InvalidDestination => {
                 write!(f, "An element was placed in an invalid destination")
             }
+            Error::InvalidSegment => write!(f, "An invalid url segment was provided"),
             Error::ParseLibrary => write!(f, "An error occurred in quick_xml"),
         }
     }

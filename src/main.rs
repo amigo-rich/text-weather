@@ -1,11 +1,15 @@
-use std::env;
+use clap::{App, Arg};
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        eprintln!("Usage: text_weather <url>");
-        eprintln!("Only bbc rss feeds are currently supported");
-        std::process::exit(1)
-    }
-    text_weather::run(&args[1]);
+    let matches = App::new("text_weather")
+        .arg(
+            Arg::with_name("segment")
+                .long("segment")
+                .required(true)
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let segment = matches.value_of("segment").unwrap();
+    text_weather::run(segment);
 }
